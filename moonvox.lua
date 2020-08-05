@@ -288,7 +288,9 @@ function Moonvox.newPlayer(source)
 		if source:sub(1, 8) == 'SVOX\x00\x00\x00\x00' then
 			data = source
 		else
-			data = assert(love.filesystem.read(source))
+			local d, err = love.filesystem.read(source)
+			if not d then return nil, err end
+			data = d
 		end
 	elseif type(source) == 'userdata' and source.getString then
 		data = source:getString()
