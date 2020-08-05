@@ -224,7 +224,7 @@ function Moonvox.init(path, freq, channels, config, ...)
 end
 
 function Moonvox.open_slot(slot)
-	if slot < 0 or slot >= MAX_SLOTS - 1 then
+	if slot < 0 or slot >= MAX_SLOTS then
 		return false, "Invalid slot " .. slot
 	end
 
