@@ -339,6 +339,7 @@ function Player:stop()
 end
 
 function Player:release()
+	Moonvox.close_slot(self._slot)
 	self._handle, self._slot = nil
 end
 
