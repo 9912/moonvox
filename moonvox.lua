@@ -28,8 +28,6 @@ Copyright (c) 2008 - 2019, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.r
 
 local ffi = require('ffi')
 
-local MAX_SLOTS = 4
-
 ffi.cdef([[
 /*
    SunVox Library (modular synthesizer)
@@ -188,8 +186,9 @@ local function loadSunvox(path)
 	return ffi.load(love.filesystem.getSaveDirectory() .. '/' .. filename)
 end
 
-local lib
+local sv
 local C = ffi.C
+local MAX_SLOTS = 4
 
 local InitFlags = {
 	NO_DEBUG_OUTPUT     = C.SV_INIT_FLAG_NO_DEBUG_OUTPUT,
@@ -204,9 +203,9 @@ local Moonvox = { _slots = setmetatable({}, { __mode = 'v' }) }
 local Player = {}
 
 function Moonvox.init(path, freq, channels, config, ...)
-	if lib then return end
+	if sv then return end
 
-	lib = loadSunvox(path)
+	sv = loadSunvox(path)
 	freq = freq or 44100
 	channels = channels or 2
 
@@ -220,7 +219,7 @@ function Moonvox.init(path, freq, channels, config, ...)
 		flags = flags + InitFlags[f]
 	end
 
-	return lib.sv_init(config, freq, channels, flags)
+	return sv.sv_init(config, freq, channels, flags)
 end
 
 function Moonvox.open_slot(slot)
@@ -232,12 +231,12 @@ function Moonvox.open_slot(slot)
 		return false, "Slot " .. slot .. " already open"
 	end
 
-	if lib.sv_open_slot(slot) ~= 0 then
+	if sv.sv_open_slot(slot) ~= 0 then
 		return false, "Could not open slot"
 	end
 
 	Moonvox._slots[slot] = ffi.gc(ffi.new('int[1]', slot), function()
-		lib.sv_close_slot(slot)
+		sv.sv_close_slot(slot)
 	end)
 
 	return true
@@ -249,37 +248,40 @@ function Moonvox.close_slot(slot)
 	end
 
 	ffi.gc(Moonvox._slots[slot], nil)
-	lib.sv_close_slot(slot)
+	sv.sv_close_slot(slot)
 	Moonvox._slots[slot] = nil
 	return true
 end
 
-function Moonvox.play(slot, fromBeginning)
-	local f = fromBeginning and lib.sv_play_from_beginning or lib.sv_play
-	return f(slot) == 0
+function Moonvox.play(slot)
+	return sv.sv_play(slot) == 0
+end
+
+function Moonvox.play_from_beginning(slot)
+	return sv.sv_play_from_beginning(slot) == 0
 end
 
 function Moonvox.stop(slot)
-	return lib.sv_stop(slot) == 0
+	return sv.sv_stop(slot) == 0
 end
 
 function Moonvox.deinit()
 	for k, _ in pairs(Moonvox._slots) do
 		Moonvox.close_slot(k)
 	end
-	return lib.sv_deinit()
+	return sv.sv_deinit()
 end
 
 function Moonvox.set_autostop(slot, autostop)
-	return lib.sv_set_autostop(slot, autostop and 1 or 0) == 0
+	return sv.sv_set_autostop(slot, autostop and 1 or 0) == 0
 end
 
 function Moonvox.end_of_song(slot)
-	return lib.sv_end_of_song(slot) ~= 0
+	return sv.sv_end_of_song(slot) ~= 0
 end
 
 function Moonvox.volume(slot, volume)
-	return lib.sv_volume(slot, math.max(0, math.min(256, volume))) == 0
+	return sv.sv_volume(slot, math.max(0, math.min(256, volume))) == 0
 end
 
 function Moonvox.newPlayer(source)
@@ -311,7 +313,7 @@ function Moonvox.newPlayer(source)
 	local ok, err = Moonvox.open_slot(slot)
 	if not ok then return nil, err end
 
-	if lib.sv_load_from_memory(slot, ffi.cast('void*', data), #data) ~= 0 then
+	if sv.sv_load_from_memory(slot, ffi.cast('void*', data), #data) ~= 0 then
 		return nil, "Could not load SunVox song"
 	end
 
@@ -326,7 +328,8 @@ end
 Player.__index = Player
 
 function Player:play(fromBeginning)
-	Moonvox.play(self._slot, fromBeginning)
+	local play = fromBeginning and Moonvox.play_from_beginning or Moonvox.play
+	play(self._slot)
 end
 
 function Player:stop()
