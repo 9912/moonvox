@@ -315,20 +315,15 @@ function Moonvox.newPlayer(source)
 		return nil, "Could not load SunVox song"
 	end
 
-	return Player.new(slot, Moonvox._slots[slot])
+	return setmetatable({
+		_slot = slot,
+		_handle = Moonvox._slots[slot]
+	}, Player)
 end
 
 -----------------------------------------------------------------------------
 
 Player.__index = Player
-
-function Player.new(slot, handle)
-	local self = setmetatable({
-		_slot = slot,
-		_handle = handle,
-	}, Player)
-	return self
-end
 
 function Player:play(fromBeginning)
 	Moonvox.play(self._slot, fromBeginning)
@@ -340,7 +335,7 @@ end
 
 function Player:release()
 	Moonvox.close_slot(self._slot)
-	self._handle, self._slot = nil
+	self._handle, self._slot = nil, nil
 end
 
 function Player:setAutostop(autostop)
