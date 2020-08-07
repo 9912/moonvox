@@ -1,16 +1,22 @@
 # SunVox player bindings for LÖVE
 
-* Requires the SunVox player library from https://warmplace.ru/soft/sunvox/
+## Requirements
+
+The SunVox player lib is not included. Get it from https://warmplace.ru/soft/sunvox/.
+
+## Example
+
+See main.lua for example code.
+
+## Notes
 
 * Only basic functions to play songs are implemented
 
 * The player DLL/.so is copied into the save directory upon initialization. This is required because you can't load DLLs from .love files.
 
-* It's required to call `Player:release` to completely stop and remove a song from memory; this releases the player 'slot' in the API, and also makes sure the sound stops at this point. When calling `:stop` only, processing for delay effects etc. continues
+* `Player:stop` stops the song, but processing for delay effects etc. continues. Call `Player:release` to completely stop and remove a song from memory; this releases the player 'slot' in the API, and makes sure no more sound is produced
 
-* Moonvox.deinit() must be called at program exit to prevent a crash
-
-* see main.lua for example code
+* Moonvox.deinit() must be called at program exit to prevent a library crash
 
 # LICENSE
 
