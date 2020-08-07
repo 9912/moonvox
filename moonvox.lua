@@ -245,7 +245,8 @@ function Moonvox.open_slot(slot)
 	return handle
 end
 
-function Moonvox.close_slot(slot)
+function Moonvox.close_slot(handle)
+	local slot = handle[0]
 	if not Moonvox._slots[slot] then
 		return false, "Slot " .. slot .. " not open"
 	end
@@ -256,45 +257,45 @@ function Moonvox.close_slot(slot)
 	return true
 end
 
-function Moonvox.play(slot)
-	return sv.sv_play(slot) == 0
+function Moonvox.play(handle)
+	return sv.sv_play(handle[0]) == 0
 end
 
-function Moonvox.play_from_beginning(slot)
-	return sv.sv_play_from_beginning(slot) == 0
+function Moonvox.play_from_beginning(handle)
+	return sv.sv_play_from_beginning(handle[0]) == 0
 end
 
-function Moonvox.stop(slot)
-	return sv.sv_stop(slot) == 0
+function Moonvox.stop(handle)
+	return sv.sv_stop(handle[0]) == 0
 end
 
 function Moonvox.deinit()
-	for k, _ in pairs(Moonvox._slots) do
-		Moonvox.close_slot(k)
+	for _, v in pairs(Moonvox._slots) do
+		Moonvox.close_slot(v)
 	end
 	return sv.sv_deinit() == 0
 end
 
-function Moonvox.set_autostop(slot, autostop)
-	return sv.sv_set_autostop(slot, autostop and 1 or 0) == 0
+function Moonvox.set_autostop(handle, autostop)
+	return sv.sv_set_autostop(handle[0], autostop and 1 or 0) == 0
 end
 
-function Moonvox.end_of_song(slot)
-	return sv.sv_end_of_song(slot) ~= 0
+function Moonvox.end_of_song(handle)
+	return sv.sv_end_of_song(handle[0]) ~= 0
 end
 
-function Moonvox.volume(slot, volume)
-	return sv.sv_volume(slot, math.max(0, math.min(256, volume))) == 0
+function Moonvox.volume(handle, volume)
+	return sv.sv_volume(handle[0], math.max(0, math.min(256, volume))) == 0
 end
 
-function Moonvox.load_from_memory(slot, data, size)
-	return sv.sv_load_from_memory(slot, data, size) == 0
+function Moonvox.load_from_memory(handle, data, size)
+	return sv.sv_load_from_memory(handle[0], data, size) == 0
 end
 
 function Moonvox.newPlayer(source)
 	local data
 	if type(source) == 'string' then
-		if source:sub(1, 8) == 'SVOX\x00\x00\x00\x00' then
+		if #source > 8 and source:sub(1, 8) == 'SVOX\x00\x00\x00\x00' then
 			data = source
 		else
 			local d, err = love.filesystem.read(source)
@@ -320,12 +321,11 @@ function Moonvox.newPlayer(source)
 	local handle, err = Moonvox.open_slot(slot)
 	if not handle then return nil, err end
 
-	if not Moonvox.load_from_memory(slot, ffi.cast('void*', data), #data) then
+	if not Moonvox.load_from_memory(handle, ffi.cast('void*', data), #data) then
 		return nil, "Could not load SunVox song"
 	end
 
 	return setmetatable({
-		_slot = slot,
 		_handle = handle
 	}, Player)
 end
@@ -336,28 +336,28 @@ Player.__index = Player
 
 function Player:play(fromBeginning)
 	local play = fromBeginning and Moonvox.play_from_beginning or Moonvox.play
-	play(self._slot)
+	play(self._handle)
 end
 
 function Player:stop()
-	Moonvox.stop(self._slot)
+	Moonvox.stop(self._handle)
 end
 
 function Player:release()
-	Moonvox.close_slot(self._slot)
-	self._handle, self._slot = nil, nil
+	Moonvox.close_slot(self._handle)
+	self._handle = nil
 end
 
 function Player:setAutostop(autostop)
-	return Moonvox.set_autostop(self._slot, autostop)
+	return Moonvox.set_autostop(self._handle, autostop)
 end
 
 function Player:setVolume(volume)
-	return Moonvox.volume(self._slot, math.max(0, math.min(256, volume * 256)))
+	return Moonvox.volume(self._handle, math.max(0, math.min(256, volume * 256)))
 end
 
 function Player:hasEnded()
-	return Moonvox.end_of_song(self._slot)
+	return Moonvox.end_of_song(self._handle)
 end
 
 -----------------------------------------------------------------------------
