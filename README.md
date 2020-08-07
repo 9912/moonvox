@@ -20,7 +20,7 @@ See main.lua for example code.
 
 # LICENSE
 
-Powered by SunVox (modular synth & tracker)
-Copyright (c) 2008 - 2020, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.ru
+SunVox Library (modular synthesizer)  
+Copyright (c) 2008 - 2019, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.ru  
 
-Lua portion of code (c) 2020 megagrump, licensed under MIT license. See LICENSE for details.
+Lua portion of code (c) 2020 megagrump, licensed under MIT license. See LICENSE file for details.
