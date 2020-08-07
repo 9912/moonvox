@@ -21,22 +21,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]--
 
---[[
-SunVox Library (modular synthesizer)
-Copyright (c) 2008 - 2019, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.ru
---]]
-
 local ffi = require('ffi')
 
 ffi.cdef([[
 /*
-   SunVox Library (modular synthesizer)
-   Copyright (c) 2008 - 2019, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.ru
+	SunVox Library (modular synthesizer)
+	Copyright (c) 2008 - 2019, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.ru
 
-   Modified for use with the LuaJIT FFI by megagrump@pm.me
+	Modified for use with the LuaJIT FFI by megagrump@pm.me
 
-   Requires SunVox Library v1.9.5d
-   See sunvox_lib/headers/sunvox.h for function documentation
+	Requires SunVox Library v1.9.5d
+	See sunvox_lib/headers/sunvox.h for function documentation
 */
 
 /*
@@ -53,11 +48,11 @@ enum {
 
 typedef struct
 {
-    uint8_t	note;           /* NN: 0 - nothing; 1..127 - note num; 128 - note off; 129, 130... - see NOTECMD_xxx defines */
-    uint8_t	vel;            /* VV: Velocity 1..129; 0 - default */
-    uint16_t	module;         /* MM: 0 - nothing; 1..65535 - module number + 1 */
-    uint16_t	ctl;            /* 0xCCEE: CC: 1..127 - controller number + 1; EE - effect */
-    uint16_t	ctl_val;        /* 0xXXYY: value of controller or effect */
+	uint8_t note;           /* NN: 0 - nothing; 1..127 - note num; 128 - note off; 129, 130... - see NOTECMD_xxx defines */
+	uint8_t vel;            /* VV: Velocity 1..129; 0 - default */
+	uint16_t module;        /* MM: 0 - nothing; 1..65535 - module number + 1 */
+	uint16_t ctl;           /* 0xCCEE: CC: 1..127 - controller number + 1; EE - effect */
+	uint16_t ctl_val;       /* 0xXXYY: value of controller or effect */
 } sunvox_note;
 
 /* Flags for sv_init(): */
@@ -93,16 +88,6 @@ enum {
 	SV_MODULE_OUTPUTS_OFF = ( 16 + 8 ),
 	SV_MODULE_OUTPUTS_MASK = ( 255 << (16 + 8) ),
 };
-
-/*
-   Macros
-*/
-/*
-#define SV_GET_MODULE_XY( in_xy, out_x, out_y ) out_x = in_xy & 0xFFFF; if( out_x & 0x8000 ) out_x -= 0x10000; out_y = ( in_xy >> 16 ) & 0xFFFF; if( out_y & 0x8000 ) out_y -= 0x10000;
-#define SV_GET_MODULE_FINETUNE( in_finetune, out_finetune, out_relative_note ) out_finetune = in_finetune & 0xFFFF; if( out_finetune & 0x8000 ) out_finetune -= 0x10000; out_relative_note = ( in_finetune >> 16 ) & 0xFFFF; if( out_relative_note & 0x8000 ) out_relative_note -= 0x10000;
-#define SV_PITCH_TO_FREQUENCY( in_pitch ) ( pow( 2, ( 30720.0F - (in_pitch) ) / 3072.0F ) * 16.3339 )
-#define SV_FREQUENCY_TO_PITCH( in_freq ) ( 30720 - log2( (in_freq) / 16.3339 ) * 3072 )
-*/
 
 /* DYNAMIC LIBRARY (DLL, SO, etc.) ... */
 
