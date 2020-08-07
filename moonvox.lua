@@ -306,6 +306,10 @@ function Moonvox.newPlayer(source)
 		data = source:getString()
 	end
 
+	if not data then
+		return nil, "Invalid song source"
+	end
+
 	local slot = -1
 	for i = 0, MAX_SLOTS - 1 do
 		if not Moonvox._slots[i] then
