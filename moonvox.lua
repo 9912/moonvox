@@ -222,24 +222,27 @@ function Moonvox.init(path, freq, channels, config, ...)
 	return sv.sv_init(config, freq, channels, flags)
 end
 
+local function collectSlot(handle)
+	sv.sv_close_slot(handle[0])
+end
+
 function Moonvox.open_slot(slot)
-	if slot < 0 or slot >= MAX_SLOTS then
-		return false, "Invalid slot " .. slot
+	if type(slot) ~= 'number' or math.floor(slot) ~= slot or slot < 0 or slot >= MAX_SLOTS then
+		return nil, "Invalid slot " .. slot
 	end
 
 	if Moonvox._slots[slot] then
-		return false, "Slot " .. slot .. " already open"
+		return nil, "Slot " .. slot .. " already open"
 	end
 
 	if sv.sv_open_slot(slot) ~= 0 then
-		return false, "Could not open slot"
+		return nil, "Could not open slot"
 	end
 
-	Moonvox._slots[slot] = ffi.gc(ffi.new('int[1]', slot), function()
-		sv.sv_close_slot(slot)
-	end)
+	local handle = ffi.gc(ffi.new('int[1]', slot), collectSlot)
+	Moonvox._slots[slot] = handle
 
-	return true
+	return handle
 end
 
 function Moonvox.close_slot(slot)
@@ -269,7 +272,7 @@ function Moonvox.deinit()
 	for k, _ in pairs(Moonvox._slots) do
 		Moonvox.close_slot(k)
 	end
-	return sv.sv_deinit()
+	return sv.sv_deinit() == 0
 end
 
 function Moonvox.set_autostop(slot, autostop)
@@ -282,6 +285,10 @@ end
 
 function Moonvox.volume(slot, volume)
 	return sv.sv_volume(slot, math.max(0, math.min(256, volume))) == 0
+end
+
+function Moonvox.load_from_memory(slot, data, size)
+	return sv.sv_load_from_memory(slot, data, size) == 0
 end
 
 function Moonvox.newPlayer(source)
@@ -310,16 +317,16 @@ function Moonvox.newPlayer(source)
 		return nil, "Out of SunVox slots"
 	end
 
-	local ok, err = Moonvox.open_slot(slot)
-	if not ok then return nil, err end
+	local handle, err = Moonvox.open_slot(slot)
+	if not handle then return nil, err end
 
-	if sv.sv_load_from_memory(slot, ffi.cast('void*', data), #data) ~= 0 then
+	if not Moonvox.load_from_memory(slot, ffi.cast('void*', data), #data) then
 		return nil, "Could not load SunVox song"
 	end
 
 	return setmetatable({
 		_slot = slot,
-		_handle = Moonvox._slots[slot]
+		_handle = handle
 	}, Player)
 end
 
