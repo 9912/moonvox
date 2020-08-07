@@ -292,34 +292,37 @@ function Moonvox.load_from_memory(handle, data, size)
 	return sv.sv_load_from_memory(handle[0], data, size) == 0
 end
 
-function Moonvox.newPlayer(source)
-	local data
-	if type(source) == 'string' then
-		if #source > 8 and source:sub(1, 8) == 'SVOX\x00\x00\x00\x00' then
-			data = source
-		else
-			local d, err = love.filesystem.read(source)
-			if not d then return nil, err end
-			data = d
-		end
-	elseif type(source) == 'userdata' and source.getString then
-		data = source:getString()
-	end
-
-	if not data then
-		return nil, "Invalid song source"
-	end
-
-	local slot = -1
+function Moonvox.get_free_slot()
 	for i = 0, MAX_SLOTS - 1 do
 		if not Moonvox._slots[i] then
-			slot = i
-			break
+			return i
 		end
 	end
+end
 
-	if slot == -1 then
+local function getSongData(source)
+	if type(source) == 'string' then
+		if #source > 8 and source:sub(1, 8) == 'SVOX\x00\x00\x00\x00' then
+			return source
+		else
+			local d, err = love.filesystem.read(source)
+			if d then return d end
+			return nil, err
+		end
+	elseif type(source) == 'userdata' and source.getString then
+		return source:getString()
+	end
+end
+
+function Moonvox.newPlayer(file)
+	local slot = Moonvox.get_free_slot()
+	if not slot then
 		return nil, "Out of SunVox slots"
+	end
+
+	local data = getSongData(file)
+	if not data then
+		return nil, "Invalid song source"
 	end
 
 	local handle, err = Moonvox.open_slot(slot)
@@ -340,11 +343,11 @@ Player.__index = Player
 
 function Player:play(fromBeginning)
 	local play = fromBeginning and Moonvox.play_from_beginning or Moonvox.play
-	play(self._handle)
+	return play(self._handle)
 end
 
 function Player:stop()
-	Moonvox.stop(self._handle)
+	return Moonvox.stop(self._handle)
 end
 
 function Player:release()
