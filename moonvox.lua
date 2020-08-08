@@ -314,6 +314,7 @@ function Moonvox.newPlayer(file)
 	if not handle then return nil, err end
 
 	if not Moonvox.load_from_memory(handle, ffi.cast('void*', data), #data) then
+		Moonvox.close_slot(handle)
 		return nil, "Could not load SunVox song"
 	end
 
