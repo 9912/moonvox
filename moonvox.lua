@@ -22,6 +22,7 @@ SOFTWARE.
 ]]--
 
 local ffi = require('ffi')
+local ls = require('love.system')
 
 ffi.cdef([[
 /*
@@ -159,8 +160,12 @@ const char* sv_get_log( int size );
 ]])
 
 local function loadSunvox(path)
-	local arch = assert(path[ffi.arch], "Architecture " .. ffi.arch .. " not supported")
-	local lib = assert(arch[ffi.os], ffi.os .. " not supported")
+	local osString = ls.getOS()
+	local arch = assert(path[ffi.arch], "Architecture " .. ffi.arch .. " not supported or not found")
+	if osString == 'Android' then
+		local lib = assert(arch['Android'], ffi.os .. " not supported or not found")
+	else
+		local lib = assert(arch[ffi.os], ffi.os .. " not supported or not found")
 	local filename = love.path.leaf(lib)
 
 	if not love.filesystem.getInfo(filename) then
