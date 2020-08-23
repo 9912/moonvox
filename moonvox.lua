@@ -162,11 +162,17 @@ const char* sv_get_log( int size );
 local function loadSunvox(path)
 	local osString = ls.getOS()
 	local arch = assert(path[ffi.arch], "Architecture " .. ffi.arch .. " not supported or not found")
-	if osString == 'Android' then
-		local lib = assert(arch['Android'], ffi.os .. " not supported or not found")
+	local isAndroid = osString == 'Android'
+	local lib
+	if isAndroid then
+		lib = assert(arch['Android'], ffi.os .. " not supported or not found")
 	else
-		local lib = assert(arch[ffi.os], ffi.os .. " not supported or not found")
+		lib = assert(arch[ffi.os], ffi.os .. " not supported or not found")
 	end
+	
+	print(isAndroid)
+	print(lib)
+	
 	local filename = love.path.leaf(lib)
 
 	if not love.filesystem.getInfo(filename) then
