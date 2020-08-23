@@ -166,6 +166,7 @@ local function loadSunvox(path)
 		local lib = assert(arch['Android'], ffi.os .. " not supported or not found")
 	else
 		local lib = assert(arch[ffi.os], ffi.os .. " not supported or not found")
+	end
 	local filename = love.path.leaf(lib)
 
 	if not love.filesystem.getInfo(filename) then

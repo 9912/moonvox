@@ -21,7 +21,7 @@ See main.lua for example code.
 
 * Moonvox.deinit() must be called at program exit to prevent a library crash
 
-* On _main.lua_ you must comment and uncomment lines inside `SUNVOX_PATH` to switch architectures and lo-fi version
+* On __main.lua__ you must comment and uncomment lines inside `SUNVOX_PATH` to switch architectures and lo-fi version
 
 # LICENSE
 
