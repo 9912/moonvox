@@ -23,6 +23,7 @@ SOFTWARE.
 
 local ffi = require('ffi')
 local ls = require('love.system')
+local bit = require('bit')
 
 ffi.cdef([[
 /*
@@ -104,9 +105,13 @@ int sv_get_sample_rate( void );
 int sv_update_input( void );
 int sv_load( int slot, const char* name );
 int sv_load_from_memory( int slot, void* data, uint32_t data_size );
+int sv_save( int slot, const char* name );
 int sv_play( int slot );
 int sv_play_from_beginning( int slot );
 int sv_stop( int slot );
+int sv_pause( int slot );
+int sv_resume( int slot );
+int sv_sync_resume( int slot );
 int sv_set_autostop( int slot, int autostop );
 int sv_get_autostop( int slot );
 int sv_end_of_song( int slot );
@@ -153,26 +158,53 @@ int sv_get_pattern_tracks( int slot, int pat_num );
 int sv_get_pattern_lines( int slot, int pat_num );
 const char* sv_get_pattern_name( int slot, int pat_num );
 sunvox_note* sv_get_pattern_data( int slot, int pat_num );
+int sv_set_pattern_event( int slot, int pat_num, int track, int line, int nn, int vv, int mm, int ccee, int xxyy );
+int sv_get_pattern_event( int slot, int pat_num, int track, int line, int column );
 int sv_pattern_mute( int slot, int pat_num, int mute );
 uint32_t sv_get_ticks( void );
 uint32_t sv_get_ticks_per_second( void );
 const char* sv_get_log( int size );
 ]])
 
-local function loadSunvox(path)
+local function loadSunvox()
 	local osString = ls.getOS()
-	local arch = assert(path[ffi.arch], "Architecture " .. ffi.arch .. " not supported or not found")
-	local isAndroid = osString == 'Android'
 	local lib
-	if isAndroid then
-		lib = assert(arch['Android'], ffi.os .. " not supported or not found")
-	else
-		lib = assert(arch[ffi.os], ffi.os .. " not supported or not found")
-	end
-	
-	print(isAndroid)
-	print(lib)
-	
+	local is64bit = ffi.abi("64bit")
+	local hashardfloat = ffi.abi("hardfp")
+	local checkarch = ffi.arch
+    
+    if osString == 'Windows' and is64bit == false then
+        lib = "svlibs/windows/x86/sunvox.dll"
+    elseif osString == 'Windows' and is64bit == true then
+        lib = "svlibs/windows/x64/sunvox.dll"
+    elseif osString == 'OS X' and checkarch == 'x64' then
+        lib = "svlibs/macos/x64/sunvox.dylib"
+    elseif osString == 'OS X' and checkarch == 'arm' then
+        lib = "svlibs/macos/arm64/sunvox.dylib"
+    elseif osString == 'Linux' and is64bit == false and checkarch == 'x86' then
+        lib = "svlibs/linux/x86/sunvox.so"
+    elseif osString == 'Linux' and is64bit == true and checkarch == 'x64' then
+        lib = "svlibs/linux/x64/sunvox.so"
+    elseif osString == 'Linux' and is64bit == false and checkarch == 'arm' and hashardfloat == false then
+        lib = "svlibs/linux/armel/sunvox.so"
+    elseif osString == 'Linux' and is64bit == false and checkarch == 'arm' and hashardfloat == true then
+        lib = "svlibs/linux/armhf/sunvox.so"
+    elseif osString == 'Linux' and is64bit == true and checkarch == 'arm' then
+        lib = "svlibs/linux/arm64/sunvox.so"
+    elseif osString == 'Android' and is64bit == false and checkarch == 'x86' then
+        lib = "svlibs/android/x86/sunvox.so"
+    elseif osString == 'Android' and is64bit == true and checkarch == 'x64' then
+        lib = "svlibs/android/x64/sunvox.so"
+    elseif osString == 'Android' and is64bit == false and checkarch == 'arm' then
+        lib = "svlibs/android/armv7/sunvox.so"
+    elseif osString == 'Android' and is64bit == true and checkarch == 'arm' then
+        lib = "svlibs/android/arm64/sunvox.so"
+    else
+        lib = love.errorhandler("System not supported: "..osString.."/"..checkarch)
+    end
+    
+    print("Using: "..lib)
+    
 	local filename = love.path.leaf(lib)
 
 	if not love.filesystem.getInfo(filename) then
@@ -199,10 +231,10 @@ local InitFlags = {
 local Moonvox = { _slots = setmetatable({}, { __mode = 'v' }) }
 local Player = {}
 
-function Moonvox.init(path, freq, channels, config, ...)
+function Moonvox.init(freq, channels, config, ...)
 	if sv then return end
 
-	sv = loadSunvox(path)
+	sv = loadSunvox()
 	freq = freq or 44100
 	channels = channels or 2
 
@@ -334,6 +366,44 @@ function Moonvox.newPlayer(file)
 		_handle = handle
 	}, Player)
 end
+
+function log2(numvalue)
+    local outvalue = math.log(numvalue)/math.log(2)
+    return outvalue
+end
+
+function Moonvox.SV_GET_MODULE_XY( in_xy, out_x, out_y )
+    out_x = bit.band( in_xy , 0xFFFF )
+    if bit.band( out_x , 0x8000 ) ~= 0 then
+        out_x = out_x - 0x10000
+    end
+    out_y = bit.band( bit.rshift( in_xy , 16 ) , 0xFFFF )
+    if bit.band( out_y , 0x8000 ) ~= 0 then
+        out_y = out_y - 0x10000
+    end
+end
+
+function Moonvox.SV_GET_MODULE_FINETUNE( in_finetune, out_finetune, out_relative_note )
+    out_finetune = bit.band( in_finetune , 0xFFFF )
+    if bit.band( out_finetune , 0x8000 ) ~= 0 then
+        out_finetune = out_finetune - 0x10000
+    end
+    out_relative_note = bit.band( bit.rshift( in_finetune , 16 ) , 0xFFFF )
+    if bit.band( out_relative_note , 0x8000 ) ~= 0 then
+        out_relative_note = out_relative_note - 0x10000
+    end
+end
+
+function Moonvox.SV_PITCH_TO_FREQUENCY( in_pitch )
+    out_freq = ( math.pow( 2, ( 30720.0 - (in_pitch) ) / 3072.0 ) * 16.333984375 )
+    return out_freq
+end
+
+function Moonvox.SV_FREQUENCY_TO_PITCH( in_freq )
+    out_pitch = ( 30720 - log2( (in_freq) / 16.333984375 ) * 3072 )
+    return out_pitch
+end
+
 
 -----------------------------------------------------------------------------
 
