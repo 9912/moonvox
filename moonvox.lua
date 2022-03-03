@@ -192,13 +192,13 @@ local function loadSunvox()
     elseif osString == 'Linux' and is64bit == true and checkarch == 'arm' then
         lib = "svlibs/linux/arm64/sunvox.so"
     elseif osString == 'Android' and is64bit == false and checkarch == 'x86' then
-        lib = "svlibs/android/x86/sunvox.so"
+        lib = "svlibs/android/x86/libsunvox.so"
     elseif osString == 'Android' and is64bit == true and checkarch == 'x64' then
-        lib = "svlibs/android/x64/sunvox.so"
+        lib = "svlibs/android/x64/libsunvox.so"
     elseif osString == 'Android' and is64bit == false and checkarch == 'arm' then
-        lib = "svlibs/android/armv7/sunvox.so"
+        lib = "svlibs/android/armv7/libsunvox.so"
     elseif osString == 'Android' and is64bit == true and checkarch == 'arm' then
-        lib = "svlibs/android/arm64/sunvox.so"
+        lib = "svlibs/android/arm64/libsunvox.so"
     else
         lib = love.errorhandler("System not supported: "..osString.."/"..checkarch)
     end
